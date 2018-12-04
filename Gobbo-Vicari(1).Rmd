@@ -1,0 +1,213 @@
+---
+title: "Homework 2"
+author: "Riccardo Gobbo & Giorgia Vicari"
+date: "10th December 2017"
+output: html_document
+---
+
+2) We're going to build a network doing M=4 simulations as the following:
+```{r, message=FALSE, warning=FALSE, fig.align='center'}
+library(igraph)
+gam<-0.5
+g<-graph.ring(4, directed = T) #starting graph
+n=1000
+M=4 #number of networks
+nets = list(type=any)
+for (j in 1:M){
+  for (i in 1:n){
+      V<-length(V(g))
+      indeg<-degree(g, v = V(g), mode = "in")
+      pr<-runif(1)
+      if (pr>=gam){
+          linkto<-sample(as.integer(V(g)), size = 1, prob = rep(1/V, V))
+          g<-add.vertices(g,1)
+          g<-add.edges(g,c(V+1, linkto))
+      }
+      else {
+          linkto<-sample(as.integer(V(g)), size = 1, prob = p)
+          g<-add.vertices(g,1)
+          g<-add.edges(g,c(V+1, linkto))
+      }
+  }
+  nets[[j]] <- g
+}
+
+###Degree distribution -on a log log plot- :
+par(mfrow=c(2,2))
+for (i in 1:M){
+  indeg=degree(nets[[i]], mode = 'in')
+  x=c(1:length(indeg))
+  deg.dist <- igraph::degree_distribution(nets[[i]], cumulative=F, mode="in")
+  plot(deg.dist, main='(log) Degree Distribution', xlab='degree',ylab='freq',log='xy', pch=20, col='blue') 
+  par(new=T)
+  plot(dpois(x,mean(indeg)),type='l', col='yellow',log='xy', ann=F, axes=F) #curve of Poisson distro
+  par(new=T)
+  plot(x,x^-(power.law.fit(indeg)$alpha),type='l',col='green',log='xy', ann=F, axes=F) #curve of Power law distro
+}
+
+###Complimentary CDF (on a log log plot) :
+par(mfrow=c(2,2))
+for (i in 1:M){
+  deg.dist.cum <- igraph::degree_distribution(nets[[i]], cumulative=T, mode="in")
+  plot(deg.dist.cum,log='xy', main='(log) CCDF', pch=20, col='violet', xlab='degree',ylab='prob') 
+  par(new=T)
+  plot(x,x^-(power.law.fit(indeg)$alpha),type='l',ann=F,axes=F,col='purple',log='xy') #curve of Power law distro
+}
+```
+
+
+It's evident that our in-degree distribution follows a straight line. In particular we generated networks adding 50% of nodes using a preferential attachment while the other half uniformly. So it seems that our network is closer to real networks instead of random networks, which means that it's likely to follow a power law, because the Poisson distribution is more suitable for random networks.  
+Now let's see our networks:
+
+```{r, warning=FALSE, message=FALSE, fig.align='center'}
+library(GGally)
+library(ggplot2)
+library(sna)
+library(intergraph)
+library(scales)
+
+ggnet2(nets[[1]], size = 'degree', arrow.size = 0.1, color = 'orchid')
+
+
+detach('package:GGally')
+detach('package:ggplot2')
+detach('package:sna')
+detach('package:intergraph')
+detach('package:network')
+```
+
+
+3) Let's build another kind of network...
+```{r, fig.align='center', warning=FALSE}
+library(igraph)
+gam<-0.5
+g<-graph.full(4, directed = T)
+n=1000
+nets2 <- list(type=any)
+for (m in 1:M){
+  for (i in 1:n){
+    V<-length(V(g))
+    vert<-as.integer(V(g))
+    indeg<-degree(g, v = V(g), mode = "in")
+    g<-add.vertices(g,1)
+    pr<-runif(1)
+    if (pr >= gam){
+      conn=T
+      while (conn==T){
+      linkto <- sample(vert, size = 1, replace=FALSE)
+      conn=are.connected(g,i,indeg)
+      }
+      g<-add.edges(g,c(i, linkto))
+      
+    }
+    else {
+      p <- igraph::degree(f, mode = "in")/(length(V(f))*3)
+      linkto <- sample(vert, size = 1, prob = p, replace=FALSE)
+      conn=T
+      while(conn==T)
+        
+      }
+      g<-add.edges(g,c(i, linkto))
+    }
+  }
+  nets2[[m]] <- g
+}
+
+
+###Degree distribution -on a log log plot- :
+par(mfrow=c(2,2))
+for (i in 1:M){
+  indeg=degree(nets2[[i]], mode = 'in')
+  x=c(1:length(indeg))
+  deg.dist <- igraph::degree_distribution(nets2[[i]], cumulative=F, mode="in")
+  plot(deg.dist, main='(log) Degree Distribution', xlab='degree',ylab='freq',log='xy', pch=20, col='lightgreen') 
+  par(new=T)
+  plot(dpois(x,mean(indeg)),type='l', col='darkseagreen4',log='xy', ann=F, axes=F) #curve of Poisson distro
+  par(new=T)
+  plot(x,x^-(power.law.fit(indeg)$alpha),type='l',col='darkseagreen3',log='xy', ann=F, axes=F) #curve of Power law distro
+}
+
+###Complimentary CDF -on a log log plot- :
+par(mfrow=c(2,2))
+for (i in 1:M){
+  deg.dist.cum <- igraph::degree_distribution(nets2[[i]], cumulative=T, mode="in")
+  plot(deg.dist.cum,log='xy', main='(log) CCDF', pch=20,xlab='degree', ylab='prob') 
+  par(new=T)
+  plot(x,x^-(power.law.fit(indeg)$alpha),type='l',ann=F,axes=F,col='grey',log='xy') #curve of Power law distro
+}
+```
+
+We may notice that in the first problem, the distribution seems to follow nicely the power-law line while in the second problem the trend is the same but there's less fitting. This is probably because the way we generated the second network is not as realistic as the first one, and since that the power law is good for REAL networks, we get this kind of results.  
+
+
+
+4) 
+##Zipf's Law and most common words  
+
+There are lots of studies that estimate and rank the most common words in English, examining texts written in this language. One of the most comprehensive analysis is the one conducted against the Oxford English Corpus (OEC), a very large collection of texts from around the world (literary works, novels, academic journals, newspapers, e-mails...) written in the English language, organised in a way that makes such analysis easier. In total, the texts in the Oxford English Corpus contain more than 2 billion words.  
+Another important English corpus that has been used to study word frequency is the Brown Corpus, which was compiled by researchers at Brown University in the 1960s, whose findings were similar to the findings of the OEC analysis.  
+Anyway, we can assert that the most used word in English is "THE", which occurs about once every 16 words. If we consider the 20 most commonly used words, and rank them across an entire language or just in one book or article, almost every time a particular pattern emerges: the second most used word will appear about half as often as the most used, the third 1/3 as often, the fourth 1/4 as often and so on. Thus, given this rank, we can say that in every kind of text, each of these words appears an amount of time proportional to one over its rank.  
+
+Plotting word frequency and ranking on a log log graph we can notice the presence of a straight line, which is the *power law* (see poweRlaw package), and this phenomenon is called **ZIPF'S LAW** (see zipfR package). George Zipf was a linguist at Harvard University and he popularized this law in 1935. It can be applied not only in English but in *every* language, even in those ancient languages we are not able to translate yet. It is such a strange thing that the so complex reality can be easily predicted this way. And of course, Zipf's law is not only applicable to languages, for instance we can use it for city populations, protein sequencies, traffic websites get, number of phone calls people receive and so on. It is just a discrete form of the Pareto distribution (which is continuous).   
+In particular, Pareto principle tells us that the 20% of the causes are responsible for 80% of the outcome, like language where about 18% of most frequent words account for over 80% of word currencies. This kind of 80-20 principle occurs in a lot of circumstances. For example, in 1896 Pareto showed that 80% of italian land was owned by 20% of the population, or that in his garden the 20% of his pea pods contained around 80% of peas.
+Furthermore, we know other phenomenons such as:  
+
+- the richest 20% of humans have 82% of the world income;  
+- in USA, 20% of patients use 80% of health care resources;  
+- in 2002 Microsoft found out that 80% of errors and crashes in Windows and Office are caused by 20% of the bugs detected;   
+- the 20% of your customers are responsible for 80% of your profits;   
+- in a home or office 20% of carpets receive the 80% of the wear (according to the book called 'The 80/20 principle')...  
+
+... and these are just a few examples! Hence, Pareto principle is *everywhere*: by focusing on just 20% of what is wrong you can often expect to solve 80% of problems.  
+
+The main point of Zipf's theory is that in the development of human language, vocabularies became more and more complex, however humans have always preferred to use fewer words to express their thoughts. This enhances the quickness and the simplicity of communication, but it has got a tradeoff in terms of information accuracy and richness, leading to misunderstandings and making the interpretation more difficult. That's the compromise between speaking and listening that leds to the current state of language: a few words are used very often and numerous words are seldom used. This is the so called *Least Effort Principle*.  
+
+After Zipf's seminal paper, the mathematician Benoit Mandelbrot showed that if you type randomly on your keyboard you will produce words distributed according to Zipf's law: it happens because there are exponentially more different long words than short, so it seems that there is nothing mysterious in this law.  
+For instance, the English alphabet can be used to make 26 one letter words, but 26$^2$ two letter words. Typing the keyboard randomly, a word terminates when you type the space bar. Since there is a certain chance that the space bar will be pressed, longer time frames before it happens are exponentially less likely than shorter ones and, the combination of these exponentials is pretty 'Zipf-y'. So assume that 26 letters and space have the same probability to be typed, after a letter is typed (so a word has begun), the probability that next input will be a space, that is creating 1 letter word, is just  1/27 (about 3.7%). And doubtless if you randomly generate characters, about 3.7% of the stuff between spaces will be single letters. Two letter words is the probability to type a letter and then the space bar, a three letter word is the probability of a letter, another letter and then the space bar, and so on. If you divide by the number of unique words of each length there can be, we get the *frequencies of occurrence* expected for any particular word given its length. Thus, long words are less likely. Here is an example:  
+
+```{r}
+words=c('a','hi','car','calm','world','turtle','dancing','football','pancettas','babysitter','hairdresser','gastronomist','manufactoring','demoralizingly','essentialnesses')
+probs <- rep(NA,length(words))
+for (i in 1:length(words)){
+  probs[i] <- ((26/27)^(nchar(words[i])-1)*(1/27))/(26^nchar(words[i]))
+}
+probs #chances that words appear at random: they decrease if the word lengths increase
+```
+  
+If we spread out these frequencies out according to the ranks they would take up on a most often used list, we obtain a graph which is the Zipf's. Let's see another example:   
+
+```{r, fig.align='center', warning=FALSE, message=FALSE}
+library(tm)
+my_text <- "There are lots of studies that estimate and rank the most common words in English, examining texts written in this language. One of the most comprehensive analysis is the one conducted against the Oxford English Corpus (OEC), a very large collection of texts from around the world (literary works, novels, academic journals, newspapers, e-mails...) written in the English language, organised in a way that makes such analysis easier. In total, the texts in the Oxford English Corpus contain more than 2 billion words. Another important English corpus that has been used to study word frequency is the Brown Corpus, which was compiled by researchers at Brown University in the 1960s, whose findings were similar to the findings of the OEC analysis"
+my_text <- removePunctuation(my_text)
+my_text <- tolower(my_text)
+file <- file('new_text.txt')
+writeLines(my_text, file, sep = " ")
+close(file)
+my_text <- scan("new_text.txt", what = "character")
+my_text_tab <- sort(table(my_text), decreasing = TRUE)
+a.my_text = data.frame(rank = c(1:length(my_text_tab)), freq = as.numeric(my_text_tab), type = names(my_text_tab))
+a.my_text$logfreq <- log2(a.my_text$freq)
+a.my_text$logrank <- log2(a.my_text$rank)
+#head(a.my_text) #for each word: frequency, rank, log-freq, log-rank
+{plot(a.my_text$logrank, a.my_text$logfreq, xlab = "log-rank", ylab = "log-frequency", pch=20, col='darkred')
+abline(lm(a.my_text$logfreq ~ a.my_text$logrank, weights = a.my_text$freq), col='orange')}
+#Since that we are considering a short text, we obtain this kind of plot because there are many words which occur twice and many only once, but the concept is always the same: points are distributed following a straight line.
+```
+
+So we could think that there's no mystery and Zipf's law simply describes what naturally happens when humans randomly segment the observable world and the mental world into labels to create words, but...  
+IT IS NOT LIKE THAT!!!  
+Actual language is totally different from random typing. It's something deterministic, because the sequence of words and issues is based on what has been said before. Furthermore, when given a list of words never used or heard before, like reading a story about aliens or creatures with strange names, people will naturally tend to use the name of one alien twice as often as another, three times as often as another and so on. Hence, Zipf's law appears to be built into our brains.  
+Another way this law occurs is with the so called *preferential attachment processes*. They take place when something - money, views, friends, jobs, wealth, ... - is given out according to how much is already possessed. In general we can say that the rich gets richer, the big gets bigger and the popular gets more popular. It is like a snowball rolling down, the more it accumulates, the bigger its surface area becomes for collecting more and the faster it grows. There does not have to be a deliberate choice driving a preferential attachment process, it can happen naturally.  
+So the Zipf's law could be at least strengthened by preferential attachment. Once a word is used, it's more likely to be used again soon.   
+But also 'critical points' play an important role. Writing and conversation often stick to a topic until a critical point is reached, where the subject and the vocabulary change. Processes like this are known to result in power laws.   
+
+So it seems plausible that all these mechanisms might collude to make Zipf's law the most natural way for language to be. Perhaps some of our vocabulary was developed randomly according to Mandelbrot's theory, and the natural way conversations follow preferential attachment, together with the principle of least effort when speaking and listening, are all the responsible for the relationship between word rank and frequency.  
+Pratically, about half of any book, conversation or article will be nothing but the same 50 to 100 words. And nearly the other half will be words that appear in that selection only once. That's not so surprising when you consider the fact that a word accounts for 6% of what we say. The top 25 most used words make up about 1/3 of everything we say and the top 100 about HALF. The set of words appearing only once in a given selection of words is called a 'hapax legomenon' and it is crucial to understand languages. If a word has only been found once in the entire known collection of an ancient language, it can be very difficult to figure out what it means. Now, there is no corpus of everything ever said or written in English, but there are very large collections and it is interesting to find hapax legomena in them.  
+
+Another relevant phenomena is that the most of what is experienced day to day is forgotten at a rate similar to Zipf's law, which makes sense: if a number of factors are naturally selected for thinking and talking about the world with tools in a 'zipf-ian' way, it makes sense we would remember it that way too. Some things really well, most things hardly at all. It is a bit disappointing that so much is dismissed, even the things you thought you would never forget. But we cannot do much on this.   
+
+In conclusion, in a 'Zipf-ian' law system some things get all the love and some get little. It is like having a pencilcase full of colors, but always use the same expected ones. 
+
+
+
