@@ -1,7 +1,7 @@
 # yt-zipf
 HW - Statistical Methods in Data Science
 
-### Exercise 01: People have the power (. . . law. . . )
+### People have the power (. . . law. . . )
 ##### Introduction
 In this exercise we focus on the so called power law family of distributions. An interesting aspect of these distributions is
 that, unlike many others we have seen, their variance can be extremely large or even infinite. As a result, certain methods we
